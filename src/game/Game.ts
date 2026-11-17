@@ -319,7 +319,12 @@ export class Game {
 
     // 描画系（ヒットストップ中は dt=0 でポーズが止まる）
     this.player.animate(dt);
-    for (const e of this.enemies) e.animate(dt, this.time.gameTime);
+    for (const e of this.enemies) {
+      // 遠くの敵・別フロアの敵は描画しない（ドローコール削減）
+      const far = e.pos.distanceToSquared(this.player.pos) > 45 * 45 || Math.abs(e.pos.y - this.player.pos.y) > 8;
+      e.group.visible = !far;
+      if (!far) e.animate(dt, this.time.gameTime);
+    }
     const focus = this.player.pos;
     this.cam.update(dt, realDt, focus, this.lock.point());
     this.fx.update(dt, realDt);

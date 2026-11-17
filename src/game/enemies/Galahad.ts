@@ -31,7 +31,7 @@ export class Galahad extends HumanoidEnemy {
     this.speed = 2.7;
     this.radius = 1.25;
     this.height = 4.2;
-    this.aggroRange = 22;
+    this.aggroRange = 27;
     this.flinchOnHit = false;
     this.staggerTime = 1.8;
     this.downTime = 3.2;

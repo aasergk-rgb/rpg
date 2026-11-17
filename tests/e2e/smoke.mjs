@@ -81,6 +81,38 @@ await wait(600);
 await shot('08-boss-fight');
 const boss = await g(() => { const G = window.__game; const b = G.enemies.find(e => e.boss); return b && { hp: Math.round(b.hp), st: b.state, phase: b.phase }; });
 console.log('boss', JSON.stringify(boss), 'player hp', await g(() => Math.round(window.__game.player.hp)));
+// タッチUIのフリック判定（ポインタイベント）
+await g(() => { const G = window.__game; G.input.lastDevice = 'touch'; G.player.dropGraft(false); G.player.stamina = 100; G.player.pos.set(0, 0, 0); G.player.state = 'move'; G.lock.clear(); for (const e of G.enemies) { e.aggroRange = 0; e.state = 'idle'; } });
+await wait(400);
+const btn = await page.locator('.tbtn.attack').boundingBox();
+const cx = btn.x + btn.width / 2, cy = btn.y + btn.height / 2;
+await page.mouse.move(cx, cy); await page.mouse.down(); await page.mouse.move(cx, cy - 50, { steps: 3 }); await page.mouse.up();
+await wait(80);
+const upMove = await g(() => window.__game.player.move?.id ?? window.__game.player.state);
+await wait(900);
+await page.mouse.move(cx, cy); await page.mouse.down(); await page.mouse.move(cx - 60, cy, { steps: 3 }); await page.mouse.up();
+await wait(80);
+const fwdMove = await g(() => window.__game.player.move?.id ?? window.__game.player.state);
+await wait(900);
+await page.mouse.move(cx, cy); await page.mouse.down(); await wait(1100); await page.mouse.up();
+await wait(60);
+const chargeMove = await g(() => window.__game.player.move?.id ?? window.__game.player.state);
+console.log('touch flick', JSON.stringify({ upMove, fwdMove, chargeMove }));
+if (upMove !== 'su' || fwdMove !== 'sf' || chargeMove !== 'sc') errors.push('touch flick mismatch');
+
+// 鍛冶場UI
+await g(() => { const G = window.__game; G.player.pos.set(7.8, 0, -7.2); });
+await wait(300);
+await page.keyboard.press('KeyE');
+await wait(500);
+await shot('09-forge');
+await page.keyboard.press('Escape');
+await wait(200);
+const calls = await g(() => window.__game.renderer.renderer.info.render.calls);
+console.log('draw calls (hub)', calls);
+await g(() => { const G = window.__game; G.player.pos.set(0, 0, 45); });
+await wait(600);
+console.log('draw calls (courtyard)', await g(() => window.__game.renderer.renderer.info.render.calls));
 const fps = await g(() => window.__game.renderer.fps);
 console.log('fps (swiftshader)', fps.toFixed(1));
 console.log('errors', JSON.stringify(errors, null, 1));

@@ -103,7 +103,7 @@ export abstract class Enemy {
           if (!mesh.isMesh) return;
           const base = mesh.material as THREE.MeshStandardMaterial;
           if (!base.isMeshStandardMaterial) return;
-          const pm = pulseMaterial(base, part.severable ? 0x66ccff : 0xffaa44);
+          const pm = pulseMaterial(base, part.severable ? 0x66ccff : 0x8899cc);
           pm.userData.part = id;
           mesh.material = pm;
           this.pulseMats.push(pm);

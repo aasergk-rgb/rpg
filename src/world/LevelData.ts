@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { Level } from './Level';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { M, mat } from '../render/Materials';
 
 export interface SpawnDef {
@@ -178,12 +179,15 @@ export function buildWorld(): WorldDef {
 
   // 西：毒の茨（火で焼き払う）
   const thorns = new THREE.Group();
+  const thornGeos: THREE.BufferGeometry[] = [];
   for (let i = 0; i < 26; i++) {
-    const t = new THREE.Mesh(new THREE.TorusKnotGeometry(0.35 + Math.random() * 0.25, 0.06, 32, 5, 2, 3), M.thorn());
-    t.position.set(-16 + (Math.random() - 0.5) * 0.8, 0.4 + Math.random() * 3.6, 44.2 + Math.random() * 3.6);
-    t.rotation.set(Math.random() * 3, Math.random() * 3, Math.random() * 3);
-    thorns.add(t);
+    const t = new THREE.TorusKnotGeometry(0.35 + Math.random() * 0.25, 0.06, 32, 5, 2, 3);
+    t.rotateX(Math.random() * 3);
+    t.rotateY(Math.random() * 3);
+    t.translate(-16 + (Math.random() - 0.5) * 0.8, 0.4 + Math.random() * 3.6, 44.2 + Math.random() * 3.6);
+    thornGeos.push(t);
   }
+  thorns.add(new THREE.Mesh(mergeGeometries(thornGeos), M.thorn()));
   L.group.add(thorns);
   const thornCol = L.box(-16.6, 0, 44, -15.4, 4.5, 48, M.thorn(), { collide: true, tag: 'thorns' });
   (thornCol.mesh as THREE.Mesh).visible = false;
@@ -310,6 +314,7 @@ export function buildWorld(): WorldDef {
     { id: 'boss', type: 'galahad', pos: [0, -12, 106], facing: Math.PI },
   ];
 
+  L.finalize();
   return {
     level: L,
     spawns,

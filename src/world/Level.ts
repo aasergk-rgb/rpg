@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { M, mat } from '../render/Materials';
 
 export interface Collider {
@@ -115,6 +116,7 @@ export class Level {
     mesh.castShadow = opts.shadow ?? h > 0.6;
     this.group.add(mesh);
     if (opts.occluder) this.occluders.push(mesh);
+    else if (!opts.tag) mesh.userData.merge = true;
     const c: Collider = { min: new THREE.Vector3(x0, y0, z0), max: new THREE.Vector3(x1, y1, z1), active: true, mesh, tag: opts.tag };
     if (opts.collide !== false) this.colliders.push(c);
     return c;
@@ -150,6 +152,35 @@ export class Level {
     this.group.add(g);
     this.braziers.push(g);
     this.lightSpots.push({ pos: new THREE.Vector3(x, y + 1.8, z), color: 0xff8a3a, intensity });
+  }
+
+  /** 静的メッシュをマテリアル毎に結合してドローコールを削減する */
+  finalize(): void {
+    const groups = new Map<THREE.Material, THREE.Mesh[]>();
+    this.group.updateMatrixWorld(true);
+    for (const o of [...this.group.children]) {
+      const mesh = o as THREE.Mesh;
+      if (!mesh.isMesh || !mesh.userData.merge) continue;
+      const m = mesh.material as THREE.Material;
+      if (!groups.has(m)) groups.set(m, []);
+      groups.get(m)!.push(mesh);
+    }
+    for (const [m, meshes] of groups) {
+      if (meshes.length < 2) continue;
+      const geos = meshes.map((x) => {
+        const g = x.geometry.clone();
+        g.applyMatrix4(x.matrixWorld);
+        return g.index ? g.toNonIndexed() : g;
+      });
+      const merged = mergeGeometries(geos, false);
+      if (!merged) continue;
+      const big = new THREE.Mesh(merged, m);
+      big.receiveShadow = true;
+      big.castShadow = meshes.some((x) => x.castShadow);
+      big.userData.noFade = true;
+      for (const x of meshes) this.group.remove(x);
+      this.group.add(big);
+    }
   }
 
   addInteract(i: Interactable): Interactable {
